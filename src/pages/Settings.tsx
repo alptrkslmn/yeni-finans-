@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../hooks/useTheme';
+import { PageLayout } from '../components/PageLayout';
 import { AppearanceSettings } from '../components/settings/AppearanceSettings';
 import { CountrySettings } from '../components/settings/CountrySettings';
 import { CurrencySettings } from '../components/settings/CurrencySettings';
@@ -13,6 +14,9 @@ import {
   Users,
   Bell,
   Lock,
+  Plus,
+  Filter,
+  MoreVertical,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -45,46 +49,88 @@ export function Settings() {
     }
   };
 
-  return (
-    <div className="max-w-7xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-semibold">{t('settings')}</h1>
-      </div>
-      <div className="flex space-x-8">
-        <div className="w-64 space-y-2">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
-                activeTab === tab.id
-                  ? `bg-${themeColor}-100 dark:bg-${themeColor}-900/20 text-${themeColor}-600 dark:text-${themeColor}-400`
-                  : 'hover:bg-gray-100 dark:hover:bg-gray-800'
-              }`}
-            >
-              <tab.icon className="w-5 h-5" />
-              <span>{t(`settingsPages.${tab.id}`)}</span>
-            </button>
-          ))}
-        </div>
+  const renderActions = () => (
+    <>
+      <button 
+        className={`flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+          isDarkMode 
+            ? 'bg-primary/20 text-white hover:bg-primary/30' 
+            : 'bg-primary/10 text-primary hover:bg-primary/20'
+        }`}
+      >
+        <Plus className="w-4 h-4 mr-2" />
+        {t('addNew')}
+      </button>
+      <button 
+        className={`p-2 rounded-lg ${
+          isDarkMode 
+            ? 'text-gray-300 hover:bg-gray-700' 
+            : 'text-gray-600 hover:bg-gray-100'
+        }`}
+      >
+        <Filter className="w-5 h-5" />
+      </button>
+      <button 
+        className={`p-2 rounded-lg ${
+          isDarkMode 
+            ? 'text-gray-300 hover:bg-gray-700' 
+            : 'text-gray-600 hover:bg-gray-100'
+        }`}
+      >
+        <MoreVertical className="w-5 h-5" />
+      </button>
+    </>
+  );
 
-        <div className="flex-1">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeTab}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.2 }}
-              className={`p-6 rounded-lg ${
-                isDarkMode ? 'bg-gray-800' : 'bg-white'
-              } shadow-sm`}
-            >
-              {renderContent()}
-            </motion.div>
-          </AnimatePresence>
+  return (
+    <PageLayout 
+      title={t('settings')} 
+      subtitle={t('settingsSubtitle')}
+      actions={renderActions()}
+    >
+      <div className={`rounded-lg overflow-hidden ${isDarkMode ? 'bg-gray-800' : 'bg-white'} shadow-sm`}>
+        {/* Tabs and Content Area */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-0">
+          {/* Sidebar Tabs */}
+          <div className="p-4 border-r border-gray-200 dark:border-gray-700">
+            <div className="space-y-1">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`w-full flex items-center p-2 rounded-lg transition-colors ${
+                    activeTab === tab.id
+                      ? (isDarkMode 
+                          ? 'bg-primary/20 text-white' 
+                          : 'bg-primary/10 text-primary')
+                      : (isDarkMode 
+                          ? 'text-gray-300 hover:bg-gray-700' 
+                          : 'text-gray-600 hover:bg-gray-100')
+                  }`}
+                >
+                  <tab.icon className="w-5 h-5 mr-3" />
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Content Area */}
+          <div className="md:col-span-3 p-4">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+              >
+                {renderContent()}
+              </motion.div>
+            </AnimatePresence>
+          </div>
         </div>
       </div>
-    </div>
+    </PageLayout>
   );
 }

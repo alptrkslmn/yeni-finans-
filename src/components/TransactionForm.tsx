@@ -1,34 +1,56 @@
 import React, { useState } from 'react';
 import { useTheme } from '../hooks/useTheme';
-import { useSettings } from '../hooks/useSettings';
+import { useSettings } from '../stores/settings';
 import { CustomCurrencyInput } from './CurrencyInput';
 import { CustomDatePicker } from './DatePicker';
 import Select from 'react-select';
 import { useDropzone } from 'react-dropzone';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Calendar,
-  Tag,
   Upload,
   X,
   Plus,
-  RepeatIcon,
-  AlertCircle,
 } from 'lucide-react';
+import { format } from 'date-fns';
 
 interface TransactionFormProps {
-  onSubmit: (data: any) => void;
+  onSubmit: (data: TransactionData) => void;
   onCancel: () => void;
-  initialData?: any;
+  initialData?: Partial<TransactionData>;
+}
+
+interface TransactionData {
+  amount: number;
+  description: string;
+  date: string;
+  type: 'income' | 'expense';
+  category: string;
+  paymentMethod: string;
+  currency?: string;
+  isRecurring?: boolean;
+  attachments?: File[];
+  tags?: string[];
+}
+
+interface SelectOption {
+  value: string;
+  label: string;
 }
 
 export function TransactionForm({ onSubmit, onCancel, initialData }: TransactionFormProps) {
   const { isDarkMode, themeColor } = useTheme();
   const { categories, paymentMethods, currencies } = useSettings();
-  const [isRecurring, setIsRecurring] = useState(false);
-  const [attachments, setAttachments] = useState<File[]>([]);
-  const [tags, setTags] = useState<string[]>([]);
+  const [isRecurring, setIsRecurring] = useState(initialData?.isRecurring || false);
+  const [attachments, setAttachments] = useState<File[]>(initialData?.attachments || []);
+  const [tags, setTags] = useState<string[]>(initialData?.tags || []);
   const [newTag, setNewTag] = useState('');
+  const [amount, setAmount] = useState(initialData?.amount?.toString() || '');
+  const [description, setDescription] = useState(initialData?.description || '');
+  const [date, setDate] = useState(initialData?.date || format(new Date(), 'yyyy-MM-dd'));
+  const [type, setType] = useState<'income' | 'expense'>(initialData?.type || 'expense');
+  const [category, setCategory] = useState(initialData?.category || '');
+  const [paymentMethod, setPaymentMethod] = useState(initialData?.paymentMethod || '');
+  const [currency, setCurrency] = useState(initialData?.currency || '');
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept: {
@@ -39,6 +61,44 @@ export function TransactionForm({ onSubmit, onCancel, initialData }: Transaction
       setAttachments((prev) => [...prev, ...acceptedFiles]);
     },
   });
+
+  const typeOptions: SelectOption[] = [
+    { value: 'income', label: 'Gelir' },
+    { value: 'expense', label: 'Gider' }
+  ];
+
+  const categoryOptions: SelectOption[] = categories.map((cat) => ({
+    value: cat.id,
+    label: cat.name,
+  }));
+
+  const paymentMethodOptions: SelectOption[] = paymentMethods.map((method) => ({
+    value: method,
+    label: method,
+  }));
+
+  const currencyOptions: SelectOption[] = currencies.map((currency: string) => ({
+    value: currency,
+    label: currency,
+  }));
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!date) return;
+    
+    onSubmit({
+      amount: parseFloat(amount.replace(/[^0-9.-]+/g, '')),
+      description,
+      date: format(new Date(date), 'yyyy-MM-dd'),
+      type,
+      category,
+      paymentMethod,
+      currency,
+      isRecurring,
+      attachments,
+      tags,
+    });
+  };
 
   const handleAddTag = () => {
     if (newTag && !tags.includes(newTag)) {
@@ -56,7 +116,7 @@ export function TransactionForm({ onSubmit, onCancel, initialData }: Transaction
   };
 
   return (
-    <div className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6">
       {/* İşlem Tipi ve Tarih */}
       <div className="grid grid-cols-2 gap-4">
         <div>
@@ -66,10 +126,9 @@ export function TransactionForm({ onSubmit, onCancel, initialData }: Transaction
             İşlem Tipi
           </label>
           <Select
-            options={[
-              { value: 'income', label: 'Gelir' },
-              { value: 'expense', label: 'Gider' },
-            ]}
+            options={typeOptions}
+            value={typeOptions.find(option => option.value === type)}
+            onChange={(option) => option && setType(option.value as 'income' | 'expense')}
             className="react-select-container"
             classNamePrefix="react-select"
             theme={(theme) => ({
@@ -85,8 +144,8 @@ export function TransactionForm({ onSubmit, onCancel, initialData }: Transaction
           />
         </div>
         <CustomDatePicker
-          selected={null}
-          onChange={() => {}}
+          selected={date ? new Date(date) : null}
+          onChange={(newDate: Date | null) => newDate && setDate(format(newDate, 'yyyy-MM-dd'))}
           label="Tarih"
         />
       </div>
@@ -100,6 +159,8 @@ export function TransactionForm({ onSubmit, onCancel, initialData }: Transaction
         </label>
         <input
           type="text"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
           className={`w-full px-3 py-2 rounded-lg border ${
             isDarkMode 
               ? 'bg-gray-700 border-gray-600 text-gray-200' 
@@ -118,17 +179,16 @@ export function TransactionForm({ onSubmit, onCancel, initialData }: Transaction
             Kategori
           </label>
           <Select
-            options={categories.map((cat) => ({
-              value: cat.id,
-              label: cat.name,
-            }))}
+            options={categoryOptions}
+            value={categoryOptions.find(option => option.value === category)}
+            onChange={(option) => option && setCategory(option.value)}
             className="react-select-container"
             classNamePrefix="react-select"
           />
         </div>
         <CustomCurrencyInput
-          value=""
-          onValueChange={() => {}}
+          value={amount}
+          onValueChange={(value: string | undefined) => setAmount(value || '')}
           label="Tutar"
         />
       </div>
@@ -142,10 +202,9 @@ export function TransactionForm({ onSubmit, onCancel, initialData }: Transaction
             Ödeme Yöntemi
           </label>
           <Select
-            options={paymentMethods.map((method) => ({
-              value: method,
-              label: method,
-            }))}
+            options={paymentMethodOptions}
+            value={paymentMethodOptions.find(option => option.value === paymentMethod)}
+            onChange={(option) => option && setPaymentMethod(option.value)}
             className="react-select-container"
             classNamePrefix="react-select"
           />
@@ -157,10 +216,9 @@ export function TransactionForm({ onSubmit, onCancel, initialData }: Transaction
             Para Birimi
           </label>
           <Select
-            options={currencies.map((currency) => ({
-              value: currency.code,
-              label: `${currency.code} - ${currency.name}`,
-            }))}
+            options={currencyOptions}
+            value={currencyOptions.find(option => option.value === currency)}
+            onChange={(option) => setCurrency(option?.value || '')}
             className="react-select-container"
             classNamePrefix="react-select"
           />
@@ -349,7 +407,7 @@ export function TransactionForm({ onSubmit, onCancel, initialData }: Transaction
           İptal
         </button>
         <button
-          onClick={() => onSubmit({})}
+          type="submit"
           className={`px-4 py-2 rounded-lg text-white ${
             `bg-${themeColor}-500 hover:bg-${themeColor}-600`
           }`}
@@ -357,6 +415,6 @@ export function TransactionForm({ onSubmit, onCancel, initialData }: Transaction
           Kaydet
         </button>
       </div>
-    </div>
+    </form>
   );
 }

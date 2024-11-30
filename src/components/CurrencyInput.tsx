@@ -1,4 +1,3 @@
-import React from 'react';
 import CurrencyInput from 'react-currency-input-field';
 import { useSettings } from '../hooks/useSettings';
 import { useTheme } from '../hooks/useTheme';

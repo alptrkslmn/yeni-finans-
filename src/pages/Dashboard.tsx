@@ -1,11 +1,8 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { 
   TrendingUp, 
   TrendingDown, 
-  DollarSign,
   Users,
-  ArrowUp,
-  ArrowDown,
   ChevronRight,
   Clock,
   Calendar,

@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { ExportMenu } from '../components/ExportMenu';
+import { DateRangePicker } from '../components/DateRangePicker';
 import {
   Grid2X2,
   LayoutList,
@@ -25,6 +26,13 @@ interface Transaction {
   reference: string;
   paymentMethod: string;
   tags?: string[];
+  recurring?: boolean;
+  recurringPeriod?: 'monthly' | 'weekly' | 'yearly';
+}
+
+interface DateRange {
+  startDate: Date | null;
+  endDate: Date | null;
 }
 
 type SortField = 'date' | 'description' | 'category' | 'amount' | 'type' | 'status';
@@ -43,10 +51,7 @@ export function Transactions() {
     field: 'date',
     order: 'desc'
   });
-  const [selectedDateRange, setSelectedDateRange] = React.useState<{
-    startDate: Date | null;
-    endDate: Date | null;
-  }>({
+  const [selectedDateRange, setSelectedDateRange] = React.useState<DateRange>({
     startDate: null,
     endDate: null,
   });
@@ -360,6 +365,26 @@ export function Transactions() {
     printWindow.print();
   };
 
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+  };
+
+  const handleCategoryChange = (category: string) => {
+    setSelectedCategory(category);
+  };
+
+  const handleTypeChange = (type: 'all' | 'income' | 'expense') => {
+    setSelectedType(type);
+  };
+
+  const handleStatusChange = (status: 'all' | 'completed' | 'pending' | 'failed') => {
+    setSelectedStatus(status);
+  };
+
+  const handleDateRangeChange = (range: DateRange) => {
+    setSelectedDateRange(range);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -409,6 +434,65 @@ export function Transactions() {
               <LayoutList className="w-4 h-4" />
             </button>
           </div>
+        </div>
+      </div>
+
+      {/* Filtering and search controls */}
+      <div className="flex items-center gap-4 mb-6 flex-wrap">
+        <div className="min-w-[200px] flex-1">
+          <input 
+            type="text" 
+            value={searchTerm}
+            onChange={handleSearchChange}
+            placeholder="İşlemlerde ara..."
+            className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200"
+          />
+        </div>
+
+        <div className="min-w-[150px]">
+          <select 
+            value={selectedCategory}
+            onChange={(e) => handleCategoryChange(e.target.value)}
+            className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200"
+          >
+            <option value="all">Tüm Kategoriler</option>
+            {categories.expense.map(category => (
+              <option key={category} value={category}>{category}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="min-w-[150px]">
+          <select 
+            value={selectedType}
+            onChange={(e) => handleTypeChange(e.target.value as 'all' | 'income' | 'expense')}
+            className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200"
+          >
+            <option value="all">Tüm İşlem Türleri</option>
+            <option value="income">Gelir</option>
+            <option value="expense">Gider</option>
+          </select>
+        </div>
+
+        <div className="min-w-[150px]">
+          <select 
+            value={selectedStatus}
+            onChange={(e) => handleStatusChange(e.target.value as 'all' | 'completed' | 'pending' | 'failed')}
+            className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200"
+          >
+            <option value="all">Tüm Durumlar</option>
+            <option value="completed">Tamamlandı</option>
+            <option value="pending">Beklemede</option>
+            <option value="failed">Başarısız</option>
+          </select>
+        </div>
+
+        <div className="min-w-[400px] flex-1">
+          <DateRangePicker
+            startDate={selectedDateRange.startDate}
+            endDate={selectedDateRange.endDate}
+            onChange={handleDateRangeChange}
+          />
         </div>
       </div>
 
@@ -479,17 +563,9 @@ export function Transactions() {
                             : 'bg-red-100 dark:bg-red-900/20'
                         }`}>
                           {transaction.type === 'income' ? (
-                            <TrendingUp className={`w-4 h-4 ${
-                              transaction.type === 'income'
-                                ? 'text-green-600 dark:text-green-400'
-                                : 'text-red-600 dark:text-red-400'
-                            }`} />
+                            <TrendingUp className="w-4 h-4 text-green-600 dark:text-green-400" />
                           ) : (
-                            <TrendingDown className={`w-4 h-4 ${
-                              transaction.type === 'income'
-                                ? 'text-green-600 dark:text-green-400'
-                                : 'text-red-600 dark:text-red-400'
-                            }`} />
+                            <TrendingDown className="w-4 h-4 text-red-600 dark:text-red-400" />
                           )}
                         </div>
                         <div>
