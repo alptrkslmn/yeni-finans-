@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../hooks/useTheme';
 import { AppearanceSettings } from '../components/settings/AppearanceSettings';
@@ -13,7 +13,6 @@ import {
   Users,
   Bell,
   Lock,
-  CreditCard,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -31,7 +30,6 @@ export function Settings() {
     { id: 'users', icon: Users, label: 'Kullanıcılar' },
     { id: 'notifications', icon: Bell, label: 'Bildirimler' },
     { id: 'security', icon: Lock, label: 'Güvenlik' },
-    { id: 'payment', icon: CreditCard, label: 'Ödeme Yöntemleri' },
   ];
 
   const renderContent = () => {
@@ -42,7 +40,6 @@ export function Settings() {
         return <CountrySettings />;
       case 'currencies':
         return <CurrencySettings />;
-      // Diğer sekmelerin içerikleri buraya eklenecek
       default:
         return null;
     }
@@ -50,30 +47,27 @@ export function Settings() {
 
   return (
     <div className="max-w-7xl mx-auto">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-semibold">{t('settings')}</h1>
+      </div>
       <div className="flex space-x-8">
-        {/* Sol Menü */}
         <div className="w-64 space-y-2">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`w-full flex items-center px-4 py-3 rounded-lg transition-colors ${
-                  isActive
-                    ? `bg-${themeColor}-50 text-${themeColor}-600 dark:bg-${themeColor}-900/20 dark:text-${themeColor}-400`
-                    : 'hover:bg-gray-100 dark:hover:bg-gray-800'
-                }`}
-              >
-                <Icon className="w-5 h-5 mr-3" />
-                <span className="font-medium">{tab.label}</span>
-              </button>
-            );
-          })}
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
+                activeTab === tab.id
+                  ? `bg-${themeColor}-100 dark:bg-${themeColor}-900/20 text-${themeColor}-600 dark:text-${themeColor}-400`
+                  : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+              }`}
+            >
+              <tab.icon className="w-5 h-5" />
+              <span>{t(`settingsPages.${tab.id}`)}</span>
+            </button>
+          ))}
         </div>
 
-        {/* Sağ İçerik */}
         <div className="flex-1">
           <AnimatePresence mode="wait">
             <motion.div

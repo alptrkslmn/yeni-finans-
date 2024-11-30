@@ -1,30 +1,18 @@
-import React, { useState } from 'react';
-import { useTheme } from '../hooks/useTheme';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { ExportMenu } from '../components/ExportMenu';
 import {
+  Grid2X2,
+  LayoutList,
   Plus,
-  Filter,
-  Download,
+  Printer,
   TrendingUp,
   TrendingDown,
-  Search,
-  Calendar,
-  ChevronDown,
-  ChevronUp,
-  Tag,
-  DollarSign,
-  FileText,
-  Trash2,
   Edit2,
-  LayoutGrid,
-  LayoutList,
-  ArrowUpDown,
-  X,
-  Save,
-  Check,
-  AlertCircle
+  Trash2,
+  X
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useTheme } from '../hooks/useTheme';
 
 interface Transaction {
   id: number;
@@ -33,35 +21,34 @@ interface Transaction {
   category: string;
   amount: number;
   type: 'income' | 'expense';
-  status: 'completed' | 'pending' | 'cancelled';
+  status: 'completed' | 'pending' | 'failed';
   reference: string;
   paymentMethod: string;
-  notes?: string;
-  attachments?: string[];
   tags?: string[];
-  recurring?: boolean;
-  recurringPeriod?: 'daily' | 'weekly' | 'monthly' | 'yearly';
 }
 
-type SortField = 'date' | 'amount' | 'category' | 'status';
+type SortField = 'date' | 'description' | 'category' | 'amount' | 'type' | 'status';
 type SortOrder = 'asc' | 'desc';
 
 export function Transactions() {
   const { isDarkMode, themeColor } = useTheme();
   const { t } = useTranslation();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [selectedType, setSelectedType] = useState('all');
-  const [selectedStatus, setSelectedStatus] = useState('all');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
-  const [isAddingTransaction, setIsAddingTransaction] = useState(false);
-  const [sortConfig, setSortConfig] = useState<{field: SortField, order: SortOrder}>({
+  const [searchTerm, setSearchTerm] = React.useState('');
+  const [selectedCategory, setSelectedCategory] = React.useState('all');
+  const [selectedType, setSelectedType] = React.useState<'all' | 'income' | 'expense'>('all');
+  const [selectedStatus, setSelectedStatus] = React.useState<'all' | 'completed' | 'pending' | 'failed'>('all');
+  const [viewMode, setViewMode] = React.useState<'grid' | 'list'>('list');
+  const [isAddingTransaction, setIsAddingTransaction] = React.useState(false);
+  const [sortConfig, setSortConfig] = React.useState<{field: SortField, order: SortOrder}>({
     field: 'date',
     order: 'desc'
   });
-  const [selectedDateRange, setSelectedDateRange] = useState<{start: string, end: string}>({
-    start: '',
-    end: ''
+  const [selectedDateRange, setSelectedDateRange] = React.useState<{
+    startDate: Date | null;
+    endDate: Date | null;
+  }>({
+    startDate: null,
+    endDate: null,
   });
 
   const categories = {
@@ -148,10 +135,14 @@ export function Transactions() {
     switch (field) {
       case 'date':
         return multiplier * (new Date(a.date).getTime() - new Date(b.date).getTime());
-      case 'amount':
-        return multiplier * (a.amount - b.amount);
+      case 'description':
+        return multiplier * a.description.localeCompare(b.description);
       case 'category':
         return multiplier * a.category.localeCompare(b.category);
+      case 'amount':
+        return multiplier * (a.amount - b.amount);
+      case 'type':
+        return multiplier * a.type.localeCompare(b.type);
       case 'status':
         return multiplier * a.status.localeCompare(b.status);
       default:
@@ -165,73 +156,259 @@ export function Transactions() {
     const matchesCategory = selectedCategory === 'all' || transaction.category === selectedCategory;
     const matchesType = selectedType === 'all' || transaction.type === selectedType;
     const matchesStatus = selectedStatus === 'all' || transaction.status === selectedStatus;
-    const matchesDateRange = !selectedDateRange.start || !selectedDateRange.end || 
-                            (transaction.date >= selectedDateRange.start && 
-                             transaction.date <= selectedDateRange.end);
+    const matchesDateRange = !selectedDateRange.startDate || !selectedDateRange.endDate || 
+                            (transaction.date >= selectedDateRange.startDate?.toISOString().split('T')[0] && 
+                             transaction.date <= selectedDateRange.endDate?.toISOString().split('T')[0]);
     
     return matchesSearch && matchesCategory && matchesType && matchesStatus && matchesDateRange;
   });
 
   const SortIcon = ({ field }: { field: SortField }) => {
-    if (sortConfig.field !== field) return <ArrowUpDown className="w-4 h-4 text-gray-400" />;
+    if (sortConfig.field !== field) return <Grid2X2 className="w-4 h-4 text-gray-400" />;
     return sortConfig.order === 'asc' ? 
-      <ChevronUp className="w-4 h-4" /> : 
-      <ChevronDown className="w-4 h-4" />;
+      <LayoutList className="w-4 h-4" /> : 
+      <Printer className="w-4 h-4" />;
+  };
+
+  // Export fonksiyonları
+  const handleExportPDF = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const exportTransactions = sortedTransactions.filter(transaction => {
+      const matchesSearch = transaction.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           transaction.reference.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory = selectedCategory === 'all' || transaction.category === selectedCategory;
+      const matchesType = selectedType === 'all' || transaction.type === selectedType;
+      const matchesStatus = selectedStatus === 'all' || transaction.status === selectedStatus;
+      const matchesDateRange = !selectedDateRange.startDate || !selectedDateRange.endDate || 
+                              (transaction.date >= selectedDateRange.startDate?.toISOString().split('T')[0] && 
+                               transaction.date <= selectedDateRange.endDate?.toISOString().split('T')[0]);
+      
+      return matchesSearch && matchesCategory && matchesType && matchesStatus && matchesDateRange;
+    });
+
+    const tableHTML = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>İşlemler</title>
+          <style>
+            body { font-family: Arial, sans-serif; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color: #f8f9fa; }
+            .amount { text-align: right; }
+            .amount.income { color: #10B981; }
+            .amount.expense { color: #EF4444; }
+            .status { text-transform: capitalize; }
+            .status.completed { color: #10B981; }
+            .status.pending { color: #F59E0B; }
+            .status.failed { color: #EF4444; }
+          </style>
+        </head>
+        <body>
+          <h1>İşlemler</h1>
+          <table>
+            <thead>
+              <tr>
+                <th>Tarih</th>
+                <th>Açıklama</th>
+                <th>Kategori</th>
+                <th>Tutar</th>
+                <th>Durum</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${exportTransactions.map(transaction => `
+                <tr>
+                  <td>${transaction.date}</td>
+                  <td>${transaction.description}</td>
+                  <td>${transaction.category}</td>
+                  <td class="amount ${transaction.type}">
+                    ${transaction.type === 'income' ? '+' : '-'}${transaction.amount.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
+                  </td>
+                  <td class="status ${transaction.status}">${transaction.status}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.write(tableHTML);
+    printWindow.document.close();
+    printWindow.print();
+  };
+
+  const handleExportExcel = () => {
+    const exportTransactions = sortedTransactions.filter(transaction => {
+      const matchesSearch = transaction.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           transaction.reference.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory = selectedCategory === 'all' || transaction.category === selectedCategory;
+      const matchesType = selectedType === 'all' || transaction.type === selectedType;
+      const matchesStatus = selectedStatus === 'all' || transaction.status === selectedStatus;
+      const matchesDateRange = !selectedDateRange.startDate || !selectedDateRange.endDate || 
+                              (transaction.date >= selectedDateRange.startDate?.toISOString().split('T')[0] && 
+                               transaction.date <= selectedDateRange.endDate?.toISOString().split('T')[0]);
+      
+      return matchesSearch && matchesCategory && matchesType && matchesStatus && matchesDateRange;
+    });
+
+    // Başlık satırı
+    const headers = ['Tarih', 'Açıklama', 'Kategori', 'Tutar', 'Tür', 'Durum'];
+    
+    // İşlem verilerini CSV formatına dönüştür
+    const csvContent = [
+      headers.join(','),
+      ...exportTransactions.map(transaction => [
+        transaction.date,
+        `"${transaction.description.replace(/"/g, '""')}"`, // Açıklamadaki virgülleri ve tırnak işaretlerini düzelt
+        transaction.category,
+        transaction.amount,
+        transaction.type === 'income' ? 'Gelir' : 'Gider',
+        transaction.status === 'completed' ? 'Tamamlandı' : 
+          transaction.status === 'pending' ? 'Beklemede' : 'Başarısız'
+      ].join(','))
+    ].join('\n');
+
+    // CSV dosyasını oluştur ve indir
+    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', `islemler_${new Date().toLocaleDateString('tr-TR')}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handlePrint = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const exportTransactions = sortedTransactions.filter(transaction => {
+      const matchesSearch = transaction.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           transaction.reference.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory = selectedCategory === 'all' || transaction.category === selectedCategory;
+      const matchesType = selectedType === 'all' || transaction.type === selectedType;
+      const matchesStatus = selectedStatus === 'all' || transaction.status === selectedStatus;
+      const matchesDateRange = !selectedDateRange.startDate || !selectedDateRange.endDate || 
+                              (transaction.date >= selectedDateRange.startDate?.toISOString().split('T')[0] && 
+                               transaction.date <= selectedDateRange.endDate?.toISOString().split('T')[0]);
+      
+      return matchesSearch && matchesCategory && matchesType && matchesStatus && matchesDateRange;
+    });
+
+    const tableHTML = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>İşlemler</title>
+          <style>
+            body { font-family: Arial, sans-serif; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color: #f8f9fa; }
+            .amount { text-align: right; }
+            .amount.income { color: #10B981; }
+            .amount.expense { color: #EF4444; }
+            .status { text-transform: capitalize; }
+            .status.completed { color: #10B981; }
+            .status.pending { color: #F59E0B; }
+            .status.failed { color: #EF4444; }
+            @media print {
+              body { -webkit-print-color-adjust: exact; }
+              th { -webkit-print-color-adjust: exact; }
+            }
+          </style>
+        </head>
+        <body>
+          <h1>İşlemler</h1>
+          <table>
+            <thead>
+              <tr>
+                <th>Tarih</th>
+                <th>Açıklama</th>
+                <th>Kategori</th>
+                <th>Tutar</th>
+                <th>Durum</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${exportTransactions.map(transaction => `
+                <tr>
+                  <td>${transaction.date}</td>
+                  <td>${transaction.description}</td>
+                  <td>${transaction.category}</td>
+                  <td class="amount ${transaction.type}">
+                    ${transaction.type === 'income' ? '+' : '-'}${transaction.amount.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
+                  </td>
+                  <td class="status ${transaction.status}">${transaction.status}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.write(tableHTML);
+    printWindow.document.close();
+    printWindow.print();
   };
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-            İşlemler
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
+            {t('transactions')}
           </h1>
-          <p className={`mt-1 text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             Tüm finansal işlemlerinizi görüntüleyin ve yönetin
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center space-x-3">
           <button 
             onClick={() => setIsAddingTransaction(true)}
             className={`flex items-center px-4 py-2 rounded-lg text-white transition-colors ${
-              `bg-${themeColor}-500 hover:bg-${themeColor}-600`
+              isDarkMode ? `bg-${themeColor}-600 hover:bg-${themeColor}-700` : `bg-${themeColor}-500 hover:bg-${themeColor}-600`
             }`}
           >
             <Plus className="w-4 h-4 mr-2" />
-            Yeni İşlem
+            {t('newTransaction')}
           </button>
+          <ExportMenu
+            onExportPDF={handleExportPDF}
+            onExportExcel={handleExportExcel}
+            onPrint={handlePrint}
+          />
           <div className="flex items-center gap-1 p-1 rounded-lg bg-gray-100 dark:bg-gray-800">
             <button
               onClick={() => setViewMode('grid')}
-              className={`p-2 rounded transition-colors ${
+              className={`p-2 rounded-md transition-colors ${
                 viewMode === 'grid'
-                  ? `bg-${themeColor}-500 text-white`
-                  : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                  ? `bg-${themeColor}-100 dark:bg-${themeColor}-900/20 text-${themeColor}-600 dark:text-${themeColor}-400`
+                  : 'hover:bg-gray-200 dark:hover:bg-gray-700'
               }`}
             >
-              <LayoutGrid className="w-4 h-4" />
+              <Grid2X2 className="w-4 h-4" />
             </button>
             <button
               onClick={() => setViewMode('list')}
-              className={`p-2 rounded transition-colors ${
+              className={`p-2 rounded-md transition-colors ${
                 viewMode === 'list'
-                  ? `bg-${themeColor}-500 text-white`
-                  : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                  ? `bg-${themeColor}-100 dark:bg-${themeColor}-900/20 text-${themeColor}-600 dark:text-${themeColor}-400`
+                  : 'hover:bg-gray-200 dark:hover:bg-gray-700'
               }`}
             >
               <LayoutList className="w-4 h-4" />
             </button>
           </div>
-          <button 
-            className={`p-2 rounded-lg transition-colors ${
-              isDarkMode 
-                ? 'text-gray-400 hover:bg-gray-800' 
-                : 'text-gray-600 hover:bg-gray-100'
-            }`}
-          >
-            <Download className="w-5 h-5" />
-          </button>
         </div>
       </div>
 
@@ -285,118 +462,113 @@ export function Transactions() {
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
               {filteredTransactions.map((transaction) => (
-                <motion.tr
-                  key={transaction.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ duration: 0.2 }}
-                  className={`${
+                <React.Fragment key={transaction.id}>
+                  <tr className={`${
                     isDarkMode 
                       ? 'hover:bg-gray-750' 
                       : 'hover:bg-gray-50'
-                  }`}
-                >
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {new Date(transaction.date).toLocaleDateString('tr-TR')}
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center">
-                      <div className={`p-2 rounded-lg mr-3 ${
-                        transaction.type === 'income'
-                          ? 'bg-green-100 dark:bg-green-900/20'
-                          : 'bg-red-100 dark:bg-red-900/20'
+                  }`}>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {new Date(transaction.date).toLocaleDateString('tr-TR')}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center">
+                        <div className={`p-2 rounded-lg mr-3 ${
+                          transaction.type === 'income'
+                            ? 'bg-green-100 dark:bg-green-900/20'
+                            : 'bg-red-100 dark:bg-red-900/20'
+                        }`}>
+                          {transaction.type === 'income' ? (
+                            <TrendingUp className={`w-4 h-4 ${
+                              transaction.type === 'income'
+                                ? 'text-green-600 dark:text-green-400'
+                                : 'text-red-600 dark:text-red-400'
+                            }`} />
+                          ) : (
+                            <TrendingDown className={`w-4 h-4 ${
+                              transaction.type === 'income'
+                                ? 'text-green-600 dark:text-green-400'
+                                : 'text-red-600 dark:text-red-400'
+                            }`} />
+                          )}
+                        </div>
+                        <div>
+                          <div className={`font-medium ${
+                            isDarkMode ? 'text-white' : 'text-gray-900'
+                          }`}>
+                            {transaction.description}
+                          </div>
+                          <div className={`text-sm ${
+                            isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                          }`}>
+                            {transaction.reference}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-800'
                       }`}>
-                        {transaction.type === 'income' ? (
-                          <TrendingUp className={`w-4 h-4 ${
-                            transaction.type === 'income'
-                              ? 'text-green-600 dark:text-green-400'
-                              : 'text-red-600 dark:text-red-400'
-                          }`} />
-                        ) : (
-                          <TrendingDown className={`w-4 h-4 ${
-                            transaction.type === 'income'
-                              ? 'text-green-600 dark:text-green-400'
-                              : 'text-red-600 dark:text-red-400'
-                          }`} />
-                        )}
+                        {transaction.category}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`font-medium ${
+                        transaction.type === 'income'
+                          ? 'text-green-600 dark:text-green-400'
+                          : 'text-red-600 dark:text-red-400'
+                      }`}>
+                        {transaction.type === 'expense' ? '-' : '+'}
+                        {transaction.amount.toLocaleString('tr-TR', {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2
+                        })} ₺
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      {transaction.paymentMethod}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        transaction.status === 'completed'
+                          ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
+                          : transaction.status === 'pending'
+                          ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400'
+                          : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
+                      }`}>
+                        {transaction.status === 'completed' ? 'Tamamlandı' :
+                         transaction.status === 'pending' ? 'Beklemede' : 'İptal Edildi'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex flex-wrap gap-1">
+                        {transaction.tags?.map((tag, index) => (
+                          <span
+                            key={index}
+                            className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                              isDarkMode 
+                                ? `bg-${themeColor}-900/20 text-${themeColor}-400`
+                                : `bg-${themeColor}-50 text-${themeColor}-700`
+                            }`}
+                          >
+                            {tag}
+                          </span>
+                        ))}
                       </div>
-                      <div>
-                        <div className={`font-medium ${
-                          isDarkMode ? 'text-white' : 'text-gray-900'
-                        }`}>
-                          {transaction.description}
-                        </div>
-                        <div className={`text-sm ${
-                          isDarkMode ? 'text-gray-400' : 'text-gray-500'
-                        }`}>
-                          {transaction.reference}
-                        </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center space-x-3">
+                        <button className={`p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700`}>
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button className={`p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-red-500`}>
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {transaction.category}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`font-medium ${
-                      transaction.type === 'income'
-                        ? 'text-green-600 dark:text-green-400'
-                        : 'text-red-600 dark:text-red-400'
-                    }`}>
-                      {transaction.type === 'expense' ? '-' : '+'}
-                      {transaction.amount.toLocaleString('tr-TR', {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2
-                      })} ₺
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    {transaction.paymentMethod}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      transaction.status === 'completed'
-                        ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
-                        : transaction.status === 'pending'
-                        ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400'
-                        : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
-                    }`}>
-                      {transaction.status === 'completed' ? 'Tamamlandı' :
-                       transaction.status === 'pending' ? 'Beklemede' : 'İptal Edildi'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex flex-wrap gap-1">
-                      {transaction.tags?.map((tag, index) => (
-                        <span
-                          key={index}
-                          className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                            isDarkMode 
-                              ? `bg-${themeColor}-900/20 text-${themeColor}-400`
-                              : `bg-${themeColor}-50 text-${themeColor}-700`
-                          }`}
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center space-x-3">
-                      <button className={`p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700`}>
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button className={`p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-red-500`}>
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                </motion.tr>
+                    </td>
+                  </tr>
+                </React.Fragment>
               ))}
             </tbody>
           </table>
@@ -404,18 +576,12 @@ export function Transactions() {
       </div>
 
       {/* Add Transaction Modal */}
-      <AnimatePresence>
+      <React.Fragment>
         {isAddingTransaction && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+          <div
             className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
           >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
+            <div
               className={`w-full max-w-2xl rounded-lg shadow-lg ${
                 isDarkMode ? 'bg-gray-800' : 'bg-white'
               } p-6`}
@@ -609,10 +775,10 @@ export function Transactions() {
                   Kaydet
                 </button>
               </div>
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
         )}
-      </AnimatePresence>
+      </React.Fragment>
     </div>
   );
 }

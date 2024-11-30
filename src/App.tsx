@@ -1,4 +1,3 @@
-import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { Dashboard } from './pages/Dashboard';
@@ -7,6 +6,7 @@ import { Settings } from './pages/Settings';
 import { Preview } from './pages/Preview';
 import { Reports } from './pages/Reports';
 import { useTheme } from './hooks/useTheme';
+import './styles/print.css';
 
 function App() {
   const { isDarkMode } = useTheme();

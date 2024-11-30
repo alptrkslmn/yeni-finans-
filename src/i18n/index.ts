@@ -1,18 +1,30 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
-const resources = {
+export const resources = {
   tr: {
     translation: {
       dashboard: 'Gösterge Paneli',
       transactions: 'İşlemler',
       settings: 'Ayarlar',
+      settingsPages: {
+        appearance: 'Görünüm',
+        currency: 'Para Birimi',
+        country: 'Ülke',
+        users: 'Kullanıcılar',
+        notifications: 'Bildirimler',
+        security: 'Güvenlik',
+        countries: 'Ülkeler',
+        currencies: 'Para Birimleri',
+        institutions: 'Kurumlar',
+        categories: 'Kategoriler'
+      },
       reports: 'Raporlar',
       appearance: 'Görünüm',
       profile: 'Profil Ayarları',
+      users: 'Kullanıcılar',
       notifications: 'Bildirimler',
       security: 'Güvenlik',
-      payment: 'Ödeme Yöntemleri',
       language: 'Dil ve Bölge',
       themeColors: 'Tema Renkleri',
       darkMode: 'Karanlık Mod',
@@ -30,9 +42,14 @@ const resources = {
       filter: 'Filtrele',
       exportAll: 'Tümünü Dışa Aktar',
       download: 'İndir',
+      exportAsPDF: 'PDF olarak indir',
+      exportAsExcel: 'Excel olarak indir',
+      print: 'Yazdır',
+      export: 'Dışa Aktar',
       completed: 'Tamamlandı',
       pending: 'Beklemede',
       failed: 'Başarısız',
+      newTransaction: 'Yeni İşlem',
     },
   },
   en: {
@@ -40,12 +57,24 @@ const resources = {
       dashboard: 'Dashboard',
       transactions: 'Transactions',
       settings: 'Settings',
+      settingsPages: {
+        appearance: 'Appearance',
+        currency: 'Currency',
+        country: 'Country',
+        users: 'Users',
+        notifications: 'Notifications',
+        security: 'Security',
+        countries: 'Countries',
+        currencies: 'Currencies',
+        institutions: 'Institutions',
+        categories: 'Categories'
+      },
       reports: 'Reports',
       appearance: 'Appearance',
       profile: 'Profile Settings',
+      users: 'Users',
       notifications: 'Notifications',
       security: 'Security',
-      payment: 'Payment Methods',
       language: 'Language & Region',
       themeColors: 'Theme Colors',
       darkMode: 'Dark Mode',
@@ -63,11 +92,16 @@ const resources = {
       filter: 'Filter',
       exportAll: 'Export All',
       download: 'Download',
+      exportAsPDF: 'Export as PDF',
+      exportAsExcel: 'Export as Excel',
+      print: 'Print',
+      export: 'Export',
       completed: 'Completed',
       pending: 'Pending',
       failed: 'Failed',
-    },
-  },
+      newTransaction: 'New Transaction',
+    }
+  }
 };
 
 i18n

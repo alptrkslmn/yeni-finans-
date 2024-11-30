@@ -1,23 +1,31 @@
-import React from 'react';
 import { useTheme } from '../../hooks/useTheme';
 import { ColorPicker } from '../ColorPicker';
 import { Moon, Sun } from 'lucide-react';
-import Select from 'react-select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../ui/select';
 
-const fontFamilies = [
+type FontFamily = 'Inter' | 'Roboto' | 'Open Sans' | 'Montserrat' | 'Poppins' | 'Raleway';
+type FontSize = 'small' | 'medium' | 'large';
+
+const fontFamilies: { value: FontFamily; label: string }[] = [
   { value: 'Inter', label: 'Inter' },
   { value: 'Roboto', label: 'Roboto' },
   { value: 'Open Sans', label: 'Open Sans' },
   { value: 'Montserrat', label: 'Montserrat' },
   { value: 'Poppins', label: 'Poppins' },
   { value: 'Raleway', label: 'Raleway' },
-] as const;
+];
 
-const fontSizes = [
-  { value: 14, label: 'Küçük' },
-  { value: 16, label: 'Orta' },
-  { value: 18, label: 'Büyük' },
-] as const;
+const fontSizes: { value: FontSize; label: string }[] = [
+  { value: 'small', label: 'Küçük' },
+  { value: 'medium', label: 'Orta' },
+  { value: 'large', label: 'Büyük' },
+];
 
 export function AppearanceSettings() {
   const {
@@ -96,23 +104,47 @@ export function AppearanceSettings() {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium mb-2">Font Ailesi</label>
-            <Select<{ value: string; label: string }>
-              value={fontFamilies.find((f) => f.value === fontFamily)}
-              onChange={(option) => option && setFontFamily(option.value)}
-              options={fontFamilies}
-              className="react-select-container"
-              classNamePrefix="react-select"
-            />
+            <Select<FontFamily>
+              value={fontFamily}
+              onValueChange={(value) => {
+                if (value) setFontFamily(value as FontFamily);
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue>
+                  {fontFamilies.find(f => f.value === fontFamily)?.label || fontFamily}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {fontFamilies.map((font) => (
+                  <SelectItem key={font.value} value={font.value}>
+                    {font.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div>
             <label className="block text-sm font-medium mb-2">Font Boyutu</label>
-            <Select<{ value: number; label: string }>
-              value={fontSizes.find((f) => f.value === fontSize)}
-              onChange={(option) => option && setFontSize(option.value)}
-              options={fontSizes}
-              className="react-select-container"
-              classNamePrefix="react-select"
-            />
+            <Select<FontSize>
+              value={fontSize}
+              onValueChange={(value) => {
+                if (value) setFontSize(value as FontSize);
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue>
+                  {fontSizes.find(f => f.value === fontSize)?.label || fontSize}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {fontSizes.map((size) => (
+                  <SelectItem key={size.value} value={size.value}>
+                    {size.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
       </div>
@@ -120,10 +152,7 @@ export function AppearanceSettings() {
       {/* Başlık Rengi */}
       <div>
         <h3 className="text-lg font-medium mb-4">Başlık Rengi</h3>
-        <ColorPicker
-          color={headingColor}
-          onChange={setHeadingColor}
-        />
+        <ColorPicker color={headingColor} onChange={setHeadingColor} />
       </div>
 
       {/* Önizleme */}
@@ -143,7 +172,7 @@ export function AppearanceSettings() {
           </h1>
           <p className={`text-base ${
             isDarkMode ? 'text-gray-300' : 'text-gray-600'
-          }`} style={{ fontSize: `${fontSize}px` }}>
+          }`} style={{ fontSize: `${fontSize === 'small' ? 14 : fontSize === 'medium' ? 16 : 18}px` }}>
             Bu bir örnek paragraftır. Font ailesi, boyutu ve renk ayarlarını
             test etmek için kullanılmaktadır.
           </p>
