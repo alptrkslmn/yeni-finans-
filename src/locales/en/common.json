@@ -1,0 +1,26 @@
+{
+  "appearanceSettings": {
+    "themeSettings": "Theme Settings",
+    "darkMode": "Dark Mode",
+    "themeColor": "Theme Color",
+    "fontSettings": "Font Settings", 
+    "fontFamily": "Font Family",
+    "selectFont": "Select Font",
+    "fontSize": "Font Size",
+    "selectFontSize": "Select Font Size",
+    "fontSize": {
+      "small": "Small",
+      "medium": "Medium", 
+      "large": "Large"
+    },
+    "colorCustomization": "Color Customization",
+    "headingColor": "Heading Color",
+    "textColor": "Text Color", 
+    "sidebarColor": "Sidebar Color",
+    "headerColor": "Header Color",
+    "contentColor": "Content Color",
+    "preview": "Preview",
+    "previewTitle": "Theme Preview",
+    "previewText": "This is a sample text to demonstrate the selected theme and font settings. You can customize colors, font family, and size to personalize your application experience."
+  }
+}

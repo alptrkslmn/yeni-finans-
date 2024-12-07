@@ -1,0 +1,26 @@
+{
+  "appearanceSettings": {
+    "themeSettings": "Tema Ayarları",
+    "darkMode": "Karanlık Mod",
+    "themeColor": "Tema Rengi",
+    "fontSettings": "Font Ayarları", 
+    "fontFamily": "Font Ailesi",
+    "selectFont": "Font Seçin",
+    "fontSize": "Font Boyutu",
+    "selectFontSize": "Font Boyutu Seçin",
+    "fontSize": {
+      "small": "Küçük",
+      "medium": "Orta", 
+      "large": "Büyük"
+    },
+    "colorCustomization": "Renk Özelleştirme",
+    "headingColor": "Başlık Rengi",
+    "textColor": "Metin Rengi", 
+    "sidebarColor": "Kenar Çubuğu Rengi",
+    "headerColor": "Üstbilgi Rengi",
+    "contentColor": "İçerik Rengi",
+    "preview": "Önizleme",
+    "previewTitle": "Tema Önizlemesi",
+    "previewText": "Bu, seçilen tema ve yazı tipi ayarlarını göstermek için örnek bir metindir. Uygulama deneyiminizi kişiselleştirmek için renkleri, yazı tipi ailesini ve boyutunu özelleştirebilirsiniz."
+  }
+}
